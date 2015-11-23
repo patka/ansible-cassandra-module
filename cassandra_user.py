@@ -53,15 +53,15 @@ def main():
             if user.name == username:
                 user_found = True
                 if state == 'present' and update_password == 'always':
-                    session.execute("ALTER USER %s WITH PASSWORD %s", (username, password))
+                    session.execute("ALTER USER {0} WITH PASSWORD '{1}'".format(username, password))
                     module.exit_json(changed=True, username=username, msg='Password updated')
                 if state == 'absent':
-                    session.execute("DROP USER %s", username)
+                    session.execute("DROP USER IF EXISTS {0}".format(username))
                     module.exit_json(changed=True, username=username, msg='User deleted')
 
         if not user_found:
-            session.execute("CREATE USER %s WITH PASSWORD %s", (username, password))
-            module.exit_json(changed=True, username=username)
+            session.execute("CREATE USER {0} WITH PASSWORD '{1}'".format(username, password))
+            module.exit_json(changed=True, username=username, msg='User created')
 
         module.exit_json(changed=False, username=username)
     finally:
