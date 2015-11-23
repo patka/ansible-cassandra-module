@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from cassandra.auth import PlainTextAuthProvider
 
 try:
@@ -47,13 +49,13 @@ def main():
 
     user_found = False
     for user in users:
-        if user.name is username:
+        if user.name == username:
             user_found = True
-            if state is 'present' and update_password is 'always':
+            if state == 'present' and update_password == 'always':
                 session.execute("ALTER USER %s WITH PASSWORD %s", (username, password))
                 cluster.shutdown()
                 module.exit_json(changed=True, username=username, msg='Password updated')
-            if state is 'absent':
+            if state == 'absent':
                 session.execute("DROP USER %s", username)
                 cluster.shutdown()
                 module.exit_json(changed=True, username=username, msg='User deleted')
