@@ -43,30 +43,31 @@ def main():
     else:
         cluster = Cluster([db_host], db_port)
 
-    session = cluster.connect()
+    try:
+        session = cluster.connect()
 
-    users = session.execute('LIST USERS')
+        users = session.execute('LIST USERS')
 
-    user_found = False
-    for user in users:
-        if user.name == username:
-            user_found = True
-            if state == 'present' and update_password == 'always':
-                session.execute("ALTER USER %s WITH PASSWORD %s", (username, password))
-                cluster.shutdown()
-                module.exit_json(changed=True, username=username, msg='Password updated')
-            if state == 'absent':
-                session.execute("DROP USER %s", username)
-                cluster.shutdown()
-                module.exit_json(changed=True, username=username, msg='User deleted')
+        user_found = False
+        for user in users:
+            if user.name == username:
+                user_found = True
+                if state == 'present' and update_password == 'always':
+                    session.execute("ALTER USER %s WITH PASSWORD %s", (username, password))
+                    module.exit_json(changed=True, username=username, msg='Password updated')
+                if state == 'absent':
+                    session.execute("DROP USER %s", username)
+                    module.exit_json(changed=True, username=username, msg='User deleted')
 
-    if not user_found:
-        session.execute("CREATE USER %s WITH PASSWORD %s", (username, password))
+        if not user_found:
+            session.execute("CREATE USER %s WITH PASSWORD %s", (username, password))
+            module.exit_json(changed=True, username=username)
+
+        module.exit_json(changed=False, username=username)
+    finally:
         cluster.shutdown()
-        module.exit_json(changed=True, username=username)
 
 
 from ansible.module_utils.basic import *
-
 if __name__ == '__main__':
     main()
