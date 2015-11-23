@@ -3,7 +3,9 @@
 from cassandra.auth import PlainTextAuthProvider
 
 try:
-    from cassandra.cluster import Cluster
+    from cassandra.cluster import Cluster 
+    from cassandra import AuthenticationFailed
+    from cassandra.cluster import NoHostAvailable
 except ImportError:
     cassandra_driver_found = False
 else:
@@ -64,6 +66,8 @@ def main():
             module.exit_json(changed=True, username=username, msg='User created')
 
         module.exit_json(changed=False, username=username)
+    except Exception as error:
+        module.exit_json(msg=str(error))
     finally:
         cluster.shutdown()
 
