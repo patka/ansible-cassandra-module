@@ -88,10 +88,9 @@ EXAMPLES = '''
 
 '''
 
-from cassandra.auth import PlainTextAuthProvider
-
 try:
     from cassandra import ConsistencyLevel
+    from cassandra.auth import PlainTextAuthProvider
     from cassandra.cluster import Cluster 
     from cassandra.query import SimpleStatement
 except ImportError:
