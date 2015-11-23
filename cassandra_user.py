@@ -70,7 +70,7 @@ description:
         choices: ['always', 'on_create']
 - notes:
     - Requires cassandra-driver for python to be installed on the remote host.
-    - @See https://datastax.github.io/python-driver/ for more information on how to install this driver
+    - @See U(https://datastax.github.io/python-driver) for more information on how to install this driver
     - This module should usually be configured with the 'run_once' option in Ansible since it makes no sense to create the same user from all the hosts
 requirements: ['cassandra-driver']
 author: "Patrick Kranz"
