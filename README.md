@@ -8,5 +8,5 @@ The keyspace module will help you create and delete keyspaces as well as
 updating the replication factor. The replication factor can currently
 only be set for the SimpleStrategy.
 
-This is the first time I wrote some real Python code so any feedback how to
+Since I have no real experience as a Python developer any feedback how to
 make this code more Python style is appreachiated.
