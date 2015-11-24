@@ -91,7 +91,7 @@ EXAMPLES = '''
 try:
     from cassandra import ConsistencyLevel
     from cassandra.auth import PlainTextAuthProvider
-    from cassandra.cluster import Cluster 
+    from cassandra.cluster import Cluster
     from cassandra.query import SimpleStatement
 except ImportError:
     cassandra_driver_found = False
@@ -103,6 +103,10 @@ def superuser_string(is_superuser):
         return "SUPERUSER"
     else:
         return "NOSUPERUSER"
+
+def create_statement(statement):
+    return SimpleStatement(statement, consistency_level=ConsistencyLevel.QUORUM)
+
 
 def main():
     module = AnsibleModule(
@@ -135,7 +139,7 @@ def main():
 
     auth_provider = PlainTextAuthProvider(username=db_user, password=db_password)
     cluster = Cluster(contact_points=[db_host], port=db_port,
-                        auth_provider=auth_provider, protocol_version=module.params['protocol_version'])    
+                        auth_provider=auth_provider, protocol_version=module.params['protocol_version'])
 
     try:
         session = cluster.connect()
@@ -147,19 +151,23 @@ def main():
             if user.name == username:
                 user_found = True
                 if state == 'present':
-                    if password is None:
-                        module.fail_json(msg="Password is required in order to modify the user")
-                    if update_password == 'always' or user.super != superuser:
-                        statement = SimpleStatement('ALTER USER %s WITH PASSWORD %s {0}'.format(superuser_string(superuser)), consistency_level=ConsistencyLevel.QUORUM)
+                    if update_password == 'always':
+                        if password is None:
+                            module.fail_json(msg="Password is required in order to change password")
+                        statement = create_statement('ALTER USER %s WITH PASSWORD %s')
                         session.execute(statement, (username, password))
-                        module.exit_json(changed=True, username=username, msg='Password and/or superuser status updated')
+                        module.exit_json(changed=True, username=username, msg='Password updated')
+                    if user.super != superuser:
+                        statement = create_statement('ALTER USER %s {0}'.format(superuser_string(superuser)))
+                        session.execute(statement, [username])
+                        module.exit_json(changed=True, username=username, msg="Superuser status changed")
                 else:
-                    statement = SimpleStatement('DROP USER IF EXISTS %s', consistency_level=ConsistencyLevel.QUORUM)
+                    statement = create_statement('DROP USER IF EXISTS %s')
                     session.execute(statement, [username])
                     module.exit_json(changed=True, username=username, msg='User deleted')
 
         if not user_found:
-            statement = SimpleStatement('CREATE USER %s WITH PASSWORD %s {0}'.format(superuser_string(superuser)), consistency_level=ConsistencyLevel.QUORUM)
+            statement = create_statement('CREATE USER %s WITH PASSWORD %s {0}'.format(superuser_string(superuser)))
             session.execute(statement, (username, password))
             module.exit_json(changed=True, username=username, msg='User created')
 
