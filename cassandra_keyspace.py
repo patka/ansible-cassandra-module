@@ -96,7 +96,7 @@ else:
 
 def keyspace_exists(session, keyspace_name):
     result = session.execute("SELECT keyspace_name FROM system.schema_keyspaces WHERE keyspace_name = %s", [keyspace_name]);
-    return len(result) > 0
+    return len(result.current_rows) > 0
 
 def create_keyspace(session, keyspace_name, clazz, replication_factor):
     query = "CREATE KEYSPACE " + keyspace_name + " WITH REPLICATION = { 'class': '" + clazz + "', 'replication_factor': " + replication_factor + " }"
