@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from ansible.module_utils.basic import *
+
 DOCUMENTATION = '''
 ---
 module: cassandra_user
@@ -8,8 +10,10 @@ description:
 - Adds or removes users from Cassandra databases
 - Sets or changes passwords for Cassandra users
 - Modifies the superuser status for Cassandra users
-- Be aware that cassandra requires the user management to be enabled in order to create users. You cannot login to a cassandra cluster that has AllowAllAuthorizer configured
-- Therefore you should provide a db_user and db_password. If you don't provide it, the module will connect with the default credentials cassandra/cassandra.
+- Be aware that cassandra requires the user management to be enabled in order to create users. You cannot login to a
+  cassandra cluster that has AllowAllAuthorizer configured
+- Therefore you should provide a db_user and db_password. If you don't provide it, the module will connect with the
+  default credentials cassandra/cassandra.
 - options:
     db_user:
         description:
@@ -71,7 +75,8 @@ description:
 - notes:
     - Requires cassandra-driver for python to be installed on the remote host.
     - @See U(https://datastax.github.io/python-driver) for more information on how to install this driver
-    - This module should usually be configured with the 'run_once' option in Ansible since it makes no sense to create the same user from all the hosts
+    - This module should usually be configured with the 'run_once' option in Ansible since it makes no sense to create
+      the same user from all the hosts
 requirements: ['cassandra-driver']
 author: "Patrick Kranz"
 '''
@@ -88,6 +93,7 @@ EXAMPLES = '''
 
 '''
 
+
 try:
     from cassandra import ConsistencyLevel
     from cassandra.auth import PlainTextAuthProvider
@@ -98,11 +104,13 @@ except ImportError:
 else:
     cassandra_driver_found = True
 
+
 def superuser_string(is_superuser):
     if is_superuser:
         return "SUPERUSER"
     else:
         return "NOSUPERUSER"
+
 
 def create_statement(statement):
     return SimpleStatement(statement, consistency_level=ConsistencyLevel.QUORUM)
@@ -115,9 +123,9 @@ def main():
             db_password=dict(default='cassandra'),
             db_host=dict(default='localhost'),
             db_port=dict(default=9042),
-            protocol_version=dict(default=3, choices=[1,2,3,4]),
+            protocol_version=dict(default=3, choices=[1, 2, 3, 4]),
             user=dict(required=True),
-            password=dict(default=None),
+            password=dict(default=None, required=True),
             superuser=dict(default='no', choices=BOOLEANS),
             state=dict(default='present', choices=['present', 'absent']),
             update_password=dict(default='always', choices=['always', 'on_create'])
@@ -139,7 +147,7 @@ def main():
 
     auth_provider = PlainTextAuthProvider(username=db_user, password=db_password)
     cluster = Cluster(contact_points=[db_host], port=db_port,
-                        auth_provider=auth_provider, protocol_version=module.params['protocol_version'])
+                      auth_provider=auth_provider, protocol_version=module.params['protocol_version'])
 
     try:
         session = cluster.connect()
@@ -178,6 +186,5 @@ def main():
         cluster.shutdown()
 
 
-from ansible.module_utils.basic import *
 if __name__ == '__main__':
     main()
