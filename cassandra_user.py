@@ -104,7 +104,6 @@ except ImportError:
 else:
     cassandra_driver_found = True
 
-
 def superuser_string(is_superuser):
     if is_superuser:
         return "SUPERUSER"
@@ -116,6 +115,11 @@ def create_statement(statement):
     return SimpleStatement(statement, consistency_level=ConsistencyLevel.QUORUM)
 
 
+def ensure_password(password, module):
+    if password is None:
+        module.fail_json(msg="Password is required for this operation.")
+
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
@@ -125,7 +129,7 @@ def main():
             db_port=dict(default=9042),
             protocol_version=dict(default=3, choices=[1, 2, 3, 4]),
             user=dict(required=True),
-            password=dict(default=None, required=True),
+            password=dict(default=None, required=False),
             superuser=dict(default='no', choices=BOOLEANS),
             state=dict(default='present', choices=['present', 'absent']),
             update_password=dict(default='always', choices=['always', 'on_create'])
@@ -150,8 +154,8 @@ def main():
                       auth_provider=auth_provider, protocol_version=module.params['protocol_version'])
 
     try:
+        msg_list = []
         session = cluster.connect()
-
         users = session.execute('LIST USERS')
 
         user_found = False
@@ -160,26 +164,30 @@ def main():
                 user_found = True
                 if state == 'present':
                     if update_password == 'always':
-                        if password is None:
-                            module.fail_json(msg="Password is required in order to change password")
+                        ensure_password(password, module)
                         statement = create_statement('ALTER USER %s WITH PASSWORD %s')
                         session.execute(statement, (username, password))
-                        module.exit_json(changed=True, username=username, msg='Password updated')
+                        msg_list.append('Password updated')
                     if user.super != superuser:
                         statement = create_statement('ALTER USER %s {0}'.format(superuser_string(superuser)))
                         session.execute(statement, [username])
-                        module.exit_json(changed=True, username=username, msg="Superuser status changed")
+                        msg_list.append('Superuser status changed')
                 else:
                     statement = create_statement('DROP USER IF EXISTS %s')
                     session.execute(statement, [username])
-                    module.exit_json(changed=True, username=username, msg='User deleted')
+                    msg_list.append('User deleted')
+                break
 
-        if not user_found:
+        if not user_found and state == 'present':
+            ensure_password(password, module)
             statement = create_statement('CREATE USER %s WITH PASSWORD %s {0}'.format(superuser_string(superuser)))
             session.execute(statement, (username, password))
-            module.exit_json(changed=True, username=username, msg='User created')
+            msg_list.append('User created')
 
-        module.exit_json(changed=False, username=username)
+        if len(msg_list) > 0:
+            module.exit_json(changed=True, username=username, msg=', '.join(msg_list))
+        else:
+            module.exit_json(changed=False, username=username)
     except Exception as error:
         module.fail_json(msg=str(error))
     finally:
