@@ -21,3 +21,6 @@ Currently this is only a skeleton and will be improved soon.
 # Disclaimer
 Since I have no real experience as a Python developer any feedback how to
 make this code more Python style is appreciated.
+
+# WARNING
+Currently it seems that this is not working with Ansible 2 and above. I currently don't know why but I intend to find out.
